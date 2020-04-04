@@ -1,11 +1,8 @@
 import React, {Component, Fragment} from 'react'
-import axios from 'axios'
 import Data from './Data'
 import TodoItem from './TodoItem'
 import './todoList.css'
 import {CSSTransition, TransitionGroup} from 'react-transition-group';
-import store from './store'
-import {getInputChangeAction, getDeleteItemAction, getAddItemAction, initData} from './store/actionCreateors'
 
 class TodoList extends Component {
   // 初始化工作 props 和 state
@@ -13,23 +10,18 @@ class TodoList extends Component {
     console.log('初始化工作 props 和 state')
 
     super(props)
-
     this.changeVal = this.changeVal.bind(this)
     this.addItem = this.addItem.bind(this)
     this.removeItem = this.removeItem.bind(this)
     this.changeToggle = this.changeToggle.bind(this)
-    this.handleStoreChange = this.handleStoreChange.bind(this)
-
-    // 订阅 store
-    store.subscribe(this.handleStoreChange)
 
     /**
      * 当组件的 state或 props 发生改变的时候，
      * render 函数会重新执行
      */
     this.state = {
-      val: store.getState().val,
-      list: store.getState().list,
+      val: '',
+      list: [],
       show: true
     }
   }
@@ -38,14 +30,6 @@ class TodoList extends Component {
   // 一般异步加载接口数据放在这里
   componentDidMount() {
     console.log('componentDidMount：组件挂载完成')
-    axios.get('https://www.boblog.com/api/v1/article/9').then(res => {
-      console.log(res.data)
-      const action = initData(res.data)
-      store.dispatch(action)
-
-    }).catch(err => {
-      console.log(err)
-    })
   }
 
   // 更新阶段：组件被更新之前，他会自动被执行
@@ -69,8 +53,15 @@ class TodoList extends Component {
    * 新增项
    */
   addItem() {
-    const action = getAddItemAction()
-    store.dispatch(action)
+    // 修改完毕数据后，进行回调函数
+    this.setState((preState, props) => ({
+      list: [...preState.list, {
+        title: preState.val
+      }],
+      val: ''
+    }), () => {
+      console.log(this.state.list)
+    })
   }
 
   /**
@@ -78,8 +69,9 @@ class TodoList extends Component {
    * @param index
    */
   removeItem(index) {
-    const action = getDeleteItemAction(index)
-    store.dispatch(action)
+    const list = [...this.state.list]
+    list.splice(index, 1)
+    this.setState({list})
   }
 
   /**
@@ -87,14 +79,9 @@ class TodoList extends Component {
    * @param e
    */
   changeVal(e) {
-    const action = getInputChangeAction(e.target.value)
-    store.dispatch(action)
-  }
-
-  handleStoreChange() {
     this.setState({
-      val: store.getState().val,
-      list: store.getState().list
+      // val: this.input.value
+      val: e.target.value
     })
   }
 
@@ -146,6 +133,7 @@ class TodoList extends Component {
             id="insertInput"
             value={this.state.val}
             onChange={this.changeVal}
+            ref={(input) => this.input = input}
             type="text"/>
           <button
             className='btn'
@@ -154,28 +142,28 @@ class TodoList extends Component {
             新增
           </button>
         </div>
-        <ul>
-          <TransitionGroup>
-            {this.state.list.map((item, index) => {
-              return (
-                <CSSTransition
-                  in={this.state.show}
-                  timeout={1000}
-                  unmountOnExit
-                  classNames='fade'
-                  appear={true}
-                  key={index}
-                  onEntered={el => el.style.color = '#2d8cf0'}>
-                  <TodoItem
-                    remove={this.removeItem}
-                    item={item}
-                    index={index}
-                  />
-                </CSSTransition>
-              )
-            })}
-          </TransitionGroup>
-        </ul>
+<ul>
+  <TransitionGroup>
+    {this.state.list.map((item, index) => {
+      return (
+        <CSSTransition
+          in={this.state.show}
+          timeout={1000}
+          unmountOnExit
+          classNames='fade'
+          appear={true}
+          key={index}
+          onEntered={el => el.style.color = '#2d8cf0'}>
+          <TodoItem
+            remove={this.removeItem}
+            item={item}
+            index={index}
+          />
+        </CSSTransition>
+      )
+    })}
+  </TransitionGroup>
+</ul>
         <Data content={this.state.val}/>
       </Fragment>
     )
