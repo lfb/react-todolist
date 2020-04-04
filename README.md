@@ -67,7 +67,7 @@ removeItem(index) {
 ```
 
 ## 绑定样式和事件
-```
+```html
 <button
     className='btn'
     style={{color: '#fff', background: 'red'}}
